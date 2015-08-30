@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<SerializableSnippets xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <commands />
+  <extensions>
+    <Snippet>
+      <id>1</id>
+      <name>NotifySuccessfulBuild</name>
+      <code>using EnvDTE;
+using System.Diagnostics;
+
+public class E : VisualCommanderExt.IExtension
+{
+    private BuildEvents _buildEvents;
+    private string _solutionName;
+    private bool _buildSuccess;
+
+    public void SetSite(EnvDTE80.DTE2 DTE, Microsoft.VisualStudio.Shell.Package package)
+    {
+        _solutionName = System.IO.Path.GetFileNameWithoutExtension(DTE.Solution.FileName);
+        _buildEvents = DTE.Events.BuildEvents;
+        _buildEvents.OnBuildBegin += BuildEvents_OnBuildBegin;
+        _buildEvents.OnBuildDone += BuildEvents_OnBuildDone;
+        _buildEvents.OnBuildProjConfigDone += BuildEvents_OnBuildProjConfigDone;
+    }
+
+    private void BuildEvents_OnBuildBegin(vsBuildScope Scope, vsBuildAction Action)
+    {
+        _buildSuccess = true;
+    }
+
+    private void BuildEvents_OnBuildProjConfigDone(string project, string projectConfig, string platform, string solutionConfig, bool success)
+    {
+        if (!success) _buildSuccess = false;
+    }
+
+    private void BuildEvents_OnBuildDone(vsBuildScope scope, vsBuildAction action)
+    {
+        if (_buildSuccess)
+            System.Diagnostics.Process.Start(new ProcessStartInfo
+            {
+                FileName = "node",
+                Arguments = @"d:\dev\vs-test-runner\client.js --action=build --solution=" + _solutionName,
+                UseShellExecute = true,
+                WindowStyle = ProcessWindowStyle.Hidden
+            });
+    }
+
+    public void Close()
+    {
+        _buildEvents.OnBuildBegin -= BuildEvents_OnBuildBegin;
+        _buildEvents.OnBuildDone -= BuildEvents_OnBuildDone;
+        _buildEvents.OnBuildProjConfigDone -= BuildEvents_OnBuildProjConfigDone;
+    }
+}</code>
+      <referencedAssemblies />
+      <type>Extension</type>
+      <lang>CS</lang>
+      <langVersion>v4.0</langVersion>
+      <enabled>true</enabled>
+    </Snippet>
+  </extensions>
+  <commonCode />
+</SerializableSnippets>
